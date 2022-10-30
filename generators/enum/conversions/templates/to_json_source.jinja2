@@ -1,0 +1,17 @@
+
+namespace {{ "::".join(enum_data.namespace) }} {
+void to_json(nlohmann::json& j, const {{ enum_data.typename }}& value) {
+    static ::std::unordered_map<{{ enum_data.typename }}, ::nlohmann::json> conversion_map = {
+        {%- for enum_value, str_value in enum_values.items() %}
+        { {{ enum_value }}, nlohmann::json({{ to_cpp_str(str_value) }}) },
+        {%- endfor -%}
+    };
+
+    auto iter = conversion_map.find(value);
+    if (iter == conversion_map.end()) {
+        throw std::invalid_argument("Unknown enum {{ enum_data.typename }} to json conversion");
+    }
+
+    j = iter->second;
+}
+}

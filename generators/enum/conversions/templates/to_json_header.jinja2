@@ -1,0 +1,4 @@
+
+namespace {{ "::".join(enum_data.namespace) }} {
+void to_json(::nlohmann::json& j, const ::{{ enum_data.typename }}& value);
+}

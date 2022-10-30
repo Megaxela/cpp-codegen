@@ -8,7 +8,7 @@ import typing as tp
 import alive_progress
 import clang.cindex
 
-from generators.basic_generator import BasicGenerator
+from generators.basic_generator import BasicGenerator, FileInfo, GeneratingConfig
 from generators.enum.generator import EnumGenerator
 
 logging.basicConfig(level=logging.INFO)
@@ -22,50 +22,59 @@ def existing_dir(val: str):
     return val
 
 
+def namespace(val: str):
+    return val.split(".")
+
+
 def parse_args():
     args = argparse.ArgumentParser()
 
     args.add_argument("--project_dir", type=existing_dir, required=True)
+    args.add_argument("--project_include_dir", type=existing_dir, required=True)
+    args.add_argument("--output_include_dir", type=existing_dir, required=True)
+    args.add_argument("--output_source_dir", type=existing_dir, required=True)
+    args.add_argument(
+        "--namespace",
+        type=namespace,
+        required=True,
+        help="Namespace in dot separated form",
+    )
 
     return args.parse_args()
-
-
-def process_tu(tu: clang.cindex.TranslationUnit):
-    nodes_to_parse: tp.List[clang.cindex.Cursor] = [tu.cursor]
-
-    while nodes_to_parse:
-        current_node = nodes_to_parse.pop(0)
-
-        if current_node.kind == clang.cindex.CursorKind.ENUM_DECL:
-            cmnt = current_node.raw_comment
-            if cmnt is None:
-                # We do not need to dig deeper, cause
-                # node children - enum values.
-                continue
-
-            if "@delta_enable_codegen" not in cmnt:
-                # We do not need to dig deeper, cause
-                # node children - enum values.
-                continue
-
-            children = current_node.get_children()
-            for ch in children:
-                print(ch.spelling, ch.brief_comment, ch)
-            continue
-
-        nodes_to_parse += current_node.get_children()
 
 
 @dataclasses.dataclass()
 class GeneratingInfo:
     translation_unit: clang.cindex.TranslationUnit
-    generators: tp.Set[BasicGenerator]
+    generator_nodes: tp.Dict[BasicGenerator, tp.List[clang.cindex.Cursor]]
+    namespace: tp.List[str]
+    file_info: FileInfo
+
+
+def visit_ast(
+    cursor: clang.cindex.Cursor,
+    func: tp.Callable[clang.cindex.Cursor, None],
+):
+    nodes_to_parse: tp.List[clang.cindex.Cursor] = [cursor]
+
+    while nodes_to_parse:
+        current_node = nodes_to_parse.pop(0)
+
+        func(current_node)
+
+        nodes_to_parse += current_node.get_children()
 
 
 def main(args):
     logger.info("Creating generators")
+
+    generator_config = {
+        "include_path": args.output_include_dir,
+        "source_path": args.output_source_dir,
+    }
+
     generators: tp.List[BasicGenerator] = [
-        EnumGenerator(),
+        EnumGenerator(**generator_config),
     ]
     logger.info("Created %d generators", len(generators))
 
@@ -77,7 +86,6 @@ def main(args):
         for filename in filenames
         if os.path.splitext(filename)[1] in {".cpp", ".hpp"}
         if not filename.startswith("test_")
-        if "arguments.hpp" in filename
     }
 
     logger.info("Found %d files to proceed", len(files_to_proceed))
@@ -97,29 +105,66 @@ def main(args):
                 ],
             )
 
-            applicable_generators = [
-                generator for generator in generators if generator.need_to_generate(tu)
-            ]
+            applicable_generators = {}
+
+            def node_processor(node: clang.cindex.Cursor):
+                for generator in generators:
+                    node_comment = node.raw_comment
+                    if node_comment is None:
+                        continue
+
+                    if "@cpp_codegen" not in node_comment:
+                        continue
+
+                    if generator.need_to_generate(node):
+                        applicable_generators.setdefault(generator, list()).append(node)
+
+            visit_ast(tu.cursor, node_processor)
+
             if applicable_generators:
                 generating_infos.append(
                     GeneratingInfo(
                         translation_unit=tu,
-                        generators=applicable_generators,
+                        generator_nodes=applicable_generators,
+                        namespace=args.namespace,
+                        file_info=FileInfo(
+                            project_include_dir=args.project_include_dir,
+                            path=file_path,
+                        ),
                     )
                 )
 
             progress()
 
+    # Calculating total amount of nodes to proceed
+    # (just for progress bar)
+    total_nodes = sum(
+        (
+            len(nodes)
+            for info in generating_infos
+            for generator, nodes in info.generator_nodes.items()
+        )
+    )
+
+    # Generating
     with alive_progress.alive_bar(
-        len(generating_infos),
+        total_nodes,
         title="Generating",
     ) as progress:
-        for translation_unit in generating_infos:
-            progress.text = os.path.basename(translation_unit.spelling)
+        for info in generating_infos:
+            for generator, nodes in info.generator_nodes.items():
+                for node in nodes:
+                    progress.text = f"{generator.__class__.__name__}({node.spelling})"
 
-            pass
+                    generator.generate(
+                        node=node,
+                        file_info=info.file_info,
+                        generating_config=GeneratingConfig(
+                            #
+                        ),
+                    )
 
-            progress()
+                    progress()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,7 @@
+---
+BasedOnStyle: Google
+BreakConstructorInitializers: BeforeComma
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+IndentWidth: 4
+AccessModifierOffset: -4
+...

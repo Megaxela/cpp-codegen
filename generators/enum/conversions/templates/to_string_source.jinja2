@@ -1,0 +1,17 @@
+
+namespace {{ "::".join(enum_data.namespace) }} {
+::std::string_view to_string(const {{ enum_data.typename }}& value) {
+    static ::std::unordered_map<{{ enum_data.typename }}, ::std::string_view> conversion_map = {
+        {%- for enum_value, str_value in enum_values.items() %}
+        { {{ enum_value }}, {{ to_cpp_str(str_value) }} },
+        {%- endfor -%}
+    };
+
+    auto iter = conversion_map.find(value);
+    if (iter == conversion_map.end()) {
+        throw std::invalid_argument("Unknown enum {{ enum_data.typename }} conversion");
+    }
+
+    return iter->second;
+}
+}

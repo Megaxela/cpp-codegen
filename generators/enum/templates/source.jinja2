@@ -1,0 +1,9 @@
+#include <{{ other_file }}>
+
+{% for include in includes -%}
+#include <{{ include }}>
+{% endfor %}
+
+{% for impl in converters -%}
+{{ impl }}
+{% endfor -%}
