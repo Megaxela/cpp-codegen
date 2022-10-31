@@ -3,6 +3,7 @@ import logging
 import subprocess
 import distutils.spawn
 import shutil
+import pathlib
 from xml.etree import ElementTree
 
 import pytest
@@ -39,7 +40,7 @@ def pytest_collect_file(parent, path):
     if not path.fnmatch("*.yaml") and not path.fnmatch("*.yml"):
         return
 
-    return UnittestFile.from_parent(parent=parent, fspath=path)
+    return UnittestFile.from_parent(parent=parent, path=pathlib.Path(path))
 
 
 def pytest_addoption(parser):
@@ -92,7 +93,12 @@ class UnittestFile(pytest.File):
         os.makedirs(project_build_dir, exist_ok=True)
 
         process = subprocess.run(
-            [cmake_bin, "-DCMAKE_BUILD_TYPE=Release", "../.."],
+            [
+                cmake_bin,
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=On",
+                "../..",
+            ],
             capture_output=True,
             cwd=project_build_dir,
         )
@@ -237,7 +243,7 @@ class UnittestItem(pytest.Item):
                     test_case.attrib["status"] == "notrun"
                     or test_case.attrib.get("result", None) == "skipped"
                 )
-                result.append((test_suite_name + "." + test_name, failures, skipped))
+                result.append((f"{test_suite_name}.{test_name}", failures, skipped))
 
         return result
 

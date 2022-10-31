@@ -67,6 +67,7 @@ namespace internal {
  * @brief This enumeration shows namespaces support.
  * @cpp_codegen
  * string_serialization
+ * json_serialization
  */
 enum class enum_simple_internal {
     enum_simple_internal_val_1,  //
@@ -79,7 +80,8 @@ public:
     /**
      * @brief This enumeration shows internal class support.
      * @cpp_codegen
-     * string_serialization.
+     * string_serialization
+     * json_serialization
      */
     enum class enum_simple_member {
         enum_simple_member_val_1,  //

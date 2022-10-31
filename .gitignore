@@ -1,4 +1,4 @@
 *.pyc
 .pycache
-tests/test_*/CMakeLists.txt
-tests/test_*/.generated
+testsuite/tests/test_*/CMakeLists.txt
+testsuite/tests/test_*/.generated/*
