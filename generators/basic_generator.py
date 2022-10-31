@@ -6,7 +6,7 @@ import clang.cindex
 
 @dataclasses.dataclass()
 class FileInfo:
-    project_include_dir: str
+    project_include_dirs: str
     path: str
 
 

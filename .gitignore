@@ -1,2 +1,4 @@
 *.pyc
 .pycache
+tests/test_*/CMakeLists.txt
+tests/test_*/.generated

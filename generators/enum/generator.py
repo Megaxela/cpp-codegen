@@ -146,9 +146,23 @@ class EnumGenerator(BasicGenerator):
             val for result in results for val in result.required_source_includes
         }
 
-        enum_file_include = os.path.relpath(
-            file_info.path, file_info.project_include_dir
-        )
+        enum_file_include = None
+        for include_dir in file_info.project_include_dirs:
+            if (
+                os.path.commonpath(
+                    (
+                        file_info.path,
+                        include_dir,
+                    )
+                )
+                != "/"
+            ):
+                enum_file_include = os.path.relpath(file_info.path, include_dir)
+
+        if enum_file_include is None:
+            raise RuntimeError(
+                f"Unable to find include directory of '{file_info.path}' source file"
+            )
 
         hpp_other_file = os.path.join("converters", f"{node.spelling}.hpp")
 

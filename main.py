@@ -4,6 +4,7 @@ import os
 import logging
 import dataclasses
 import typing as tp
+import fnmatch
 
 import alive_progress
 import clang.cindex
@@ -30,7 +31,12 @@ def parse_args():
     args = argparse.ArgumentParser()
 
     args.add_argument("--project_dir", type=existing_dir, required=True)
-    args.add_argument("--project_include_dir", type=existing_dir, required=True)
+    args.add_argument(
+        "--project_include_dir",
+        type=existing_dir,
+        required=True,
+        action="append",
+    )
     args.add_argument("--output_include_dir", type=existing_dir, required=True)
     args.add_argument("--output_source_dir", type=existing_dir, required=True)
     args.add_argument(
@@ -38,6 +44,12 @@ def parse_args():
         type=namespace,
         required=True,
         help="Namespace in dot separated form",
+    )
+
+    args.add_argument(
+        "--ignore_path_glob",
+        type=str,
+        action="append",
     )
 
     return args.parse_args()
@@ -85,7 +97,12 @@ def main(args):
         for dirpath, dirnames, filenames in os.walk(args.project_dir)
         for filename in filenames
         if os.path.splitext(filename)[1] in {".cpp", ".hpp"}
-        if not filename.startswith("test_")
+        if not any(
+            (
+                fnmatch.fnmatch(os.path.join(dirpath, filename), pattern)
+                for pattern in args.ignore_path_glob
+            )
+        )
     }
 
     logger.info("Found %d files to proceed", len(files_to_proceed))
@@ -128,7 +145,7 @@ def main(args):
                         generator_nodes=applicable_generators,
                         namespace=args.namespace,
                         file_info=FileInfo(
-                            project_include_dir=args.project_include_dir,
+                            project_include_dirs=args.project_include_dir,
                             path=file_path,
                         ),
                     )

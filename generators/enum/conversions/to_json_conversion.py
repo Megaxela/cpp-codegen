@@ -46,5 +46,6 @@ class ToJsonConversion(BasicConversion):
             },
             required_source_includes={
                 "unordered_map",
+                "stdexcept",
             },
         )
