@@ -30,15 +30,31 @@ def namespace(val: str):
 def parse_args():
     args = argparse.ArgumentParser()
 
-    args.add_argument("--project_dir", type=existing_dir, required=True)
+    args.add_argument(
+        "--project_dir",
+        type=existing_dir,
+        required=True,
+    )
+
     args.add_argument(
         "--project_include_dir",
         type=existing_dir,
         required=True,
         action="append",
     )
-    args.add_argument("--output_include_dir", type=existing_dir, required=True)
-    args.add_argument("--output_source_dir", type=existing_dir, required=True)
+
+    args.add_argument(
+        "--output_include_dir",
+        type=existing_dir,
+        required=True,
+    )
+
+    args.add_argument(
+        "--output_source_dir",
+        type=existing_dir,
+        required=True,
+    )
+
     args.add_argument(
         "--namespace",
         type=namespace,
@@ -50,6 +66,11 @@ def parse_args():
         "--ignore_path_glob",
         type=str,
         action="append",
+    )
+
+    args.add_argument(
+        "--clang_library",
+        type=existing_dir,
     )
 
     return args.parse_args()
@@ -79,6 +100,9 @@ def visit_ast(
 
 def main(args):
     logger.info("Creating generators")
+
+    if args.clang_library is not None:
+        clang.cindex.Config.library_file = args.clang_library
 
     generator_config = {
         "include_path": args.output_include_dir,

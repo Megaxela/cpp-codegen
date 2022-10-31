@@ -44,11 +44,20 @@ def pytest_collect_file(parent, path):
 
 
 def pytest_addoption(parser):
-    parser.addini(
-        "cmake_binary",
-        type="string",
+    parser.addoption(
+        "--cmake_binary",
+        dest="cmake_binary",
+        type=str,
         default=distutils.spawn.find_executable("cmake"),
         help="Binary for execution",
+    )
+
+    parser.addoption(
+        "--libclang_path",
+        dest="libclang_path",
+        type=str,
+        default=None,  # "/usr/lib/libclang.so"
+        help="Specifies path to libclang library",
     )
 
 
@@ -73,6 +82,7 @@ class UnittestFile(pytest.File):
 
         template_args = {
             "project_name": project_name,
+            "clang_library": self.session.config.option.libclang_path,
         }
 
         with open(os.path.join(project_path, "CMakeLists.txt"), "w") as f:
@@ -83,7 +93,7 @@ class UnittestFile(pytest.File):
 
         logger.info("Running cmake configuration for project '%s'", project_name)
 
-        cmake_bin = self.session.config.getini("cmake_binary")
+        cmake_bin = self.session.config.option.cmake_binary
         if cmake_bin is None:
             raise RuntimeError(
                 "No cmake executable has been found. Specify cmake binary in .ini as `cmake_binary`"

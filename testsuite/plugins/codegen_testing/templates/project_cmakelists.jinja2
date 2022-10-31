@@ -20,4 +20,10 @@ target_link_libraries(${PROJECT_NAME}
     gtest
 )
 
-target_codegen(${PROJECT_NAME})
+target_codegen(
+    TARGET ${PROJECT_NAME}
+
+{%- if clang_library %}
+    CLANG_LIBRARY {{ clang_library }}
+{%  endif -%} 
+)
