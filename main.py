@@ -86,7 +86,7 @@ class GeneratingInfo:
 
 def visit_ast(
     cursor: clang.cindex.Cursor,
-    func: tp.Callable[clang.cindex.Cursor, None],
+    func: tp.Callable[[clang.cindex.Cursor], None],
 ):
     nodes_to_parse: tp.List[clang.cindex.Cursor] = [cursor]
 
