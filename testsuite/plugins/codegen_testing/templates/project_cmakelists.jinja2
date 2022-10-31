@@ -5,6 +5,11 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/cpp_codegen.cmake)
 
 file(GLOB_RECURSE TESTS_SOURCES ./tests/*.cpp)
 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../libraries/json nlohmann_json)
+
+set(INSTALL_GTEST Off)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../libraries/googletest googletest)
+
 add_executable(${PROJECT_NAME}
   ./.generated/main.cpp
   ${TESTS_SOURCES}
@@ -18,6 +23,7 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
     gtest
+    nlohmann_json
 )
 
 target_codegen(
@@ -27,3 +33,5 @@ target_codegen(
     CLANG_LIBRARY {{ clang_library }}
 {%  endif -%} 
 )
+
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)

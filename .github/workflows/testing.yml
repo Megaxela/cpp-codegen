@@ -8,15 +8,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: true
-        
+
     - name: Install python requirements
       run: python -m pip install -r requirements.txt
-    
+
     - name: Run tests
-      run: python ./testsuite/run_tests.py
+      run: python ./testsuite/run_tests.py --libclang_path /usr/lib/llvm-12/lib/libclang.so.1
