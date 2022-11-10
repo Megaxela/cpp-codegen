@@ -3,6 +3,59 @@ This project implements small tooling that easily perform C++ code generation.
 
 ## Usage
 
+### Code
+To enable codegen in specific node, provide multiline comment to that node and declare new doxygen section `@cpp_codegen`.
+Then provide activation strings for desired generator.
+
+Example:
+```cpp
+/**
+ * @cpp_codegen
+ * string_serialization
+ */
+enum sample {
+    val_1
+};
+```
+
+## Generators
+Supported generators:
+
+### `enum`
+This generator generates code for enumeration conversions. To enable this generator for specific enumeration enable one of the following subgenerators in `@cpp_codegen` comment section.
+To override default serialization values, provide enumeration value comment with following format `//< "value"prefix[, "value"prefix]`.
+Activation strings for this generator are subgenerator names.
+
+#### Subgenerators
+| Name                   | Description                                  |
+|------------------------|----------------------------------------------|
+| `string_serialization` | Provides enum conversion to string           |
+| `json_serialization`   | Provides enum conversion to `nlohmann::json` |
+
+#### Example
+Code below will trigger generation of file `converters/simple_enum.hpp` with following converters:
+- `std::string_view to_string(const ::some_ns::sample_enum&)`
+- `void to_json(::nlohmann::json&, const ::some_ns::sample_enum&)`
+
+```cpp
+namespace some_ns {
+/**
+ * @cpp_codegen
+ * string_serialization
+ * json_serialization
+ */
+enum class sample_enum {
+    sample_val_1,  //< "custom_val_1"s "custom_val_2"json
+    sample_val_2,
+};
+} // some_ns
+
+...
+
+ASSERT_EQ(some_ns::to_string(some_ns::sample_enum::sample_val_1), "custom_val_1");
+ASSERT_EQ(nlohmann::json(some_ns::sample_enum::sample_val_1), nlohmann::json("custom_val_1"));
+```
+
 ### CMake
 
 `cpp-codegen` supports cmake integration. Example usage:
@@ -19,18 +72,28 @@ target_codegen(target_name)
 ### Raw
 
 ```
-usage: main.py [-h] --project_dir PROJECT_DIR --project_include_dir PROJECT_INCLUDE_DIR --output_include_dir OUTPUT_INCLUDE_DIR --output_source_dir
-               OUTPUT_SOURCE_DIR --namespace NAMESPACE [--ignore_path_glob IGNORE_PATH_GLOB]
+usage: main.py [-h] --project_dir PROJECT_DIR --project_include_dir PROJECT_INCLUDE_DIR --output_include_dir OUTPUT_INCLUDE_DIR
+               --output_source_dir OUTPUT_SOURCE_DIR --namespace NAMESPACE [--ignore_path_glob IGNORE_PATH_GLOB]
+               [--clang_library CLANG_LIBRARY]
 
 options:
   -h, --help            show this help message and exit
   --project_dir PROJECT_DIR
+                        Path to project directory. This directory will be iterated to parse C++ files.
   --project_include_dir PROJECT_INCLUDE_DIR
+                        Path to `project_dir` project include directories. Can be declared multiple times. This directory will be used
+                        to convert paths to includes.
   --output_include_dir OUTPUT_INCLUDE_DIR
+                        Path to directory for generated header files.
   --output_source_dir OUTPUT_SOURCE_DIR
+                        Path to directory for generated source files.
   --namespace NAMESPACE
-                        Namespace in dot separated form
+                        Namespace in dot separated form (not used right now).
   --ignore_path_glob IGNORE_PATH_GLOB
+                        File globs that should be excluded from project parsing. For example `test_*.cpp`.
+  --clang_library CLANG_LIBRARY
+                        Absolute path to system clang library. If script will not be able to locate library by itself you may provide
+                        this argument.
 ```
 
 ## Testing

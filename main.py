@@ -34,6 +34,7 @@ def parse_args():
         "--project_dir",
         type=existing_dir,
         required=True,
+        help="Path to project directory. This directory will be iterated to parse C++ files.",
     )
 
     args.add_argument(
@@ -41,36 +42,41 @@ def parse_args():
         type=existing_dir,
         required=True,
         action="append",
+        help="Path to `project_dir` project include directories. Can be declared multiple times. This directory will be used to convert paths to includes.",
     )
 
     args.add_argument(
         "--output_include_dir",
         type=existing_dir,
         required=True,
+        help="Path to directory for generated header files.",
     )
 
     args.add_argument(
         "--output_source_dir",
         type=existing_dir,
         required=True,
+        help="Path to directory for generated source files.",
     )
 
     args.add_argument(
         "--namespace",
         type=namespace,
         required=True,
-        help="Namespace in dot separated form",
+        help="Namespace in dot separated form (not used right now).",
     )
 
     args.add_argument(
         "--ignore_path_glob",
         type=str,
         action="append",
+        help="File globs that should be excluded from project parsing. For example `test_*.cpp`.",
     )
 
     args.add_argument(
         "--clang_library",
         type=existing_dir,
+        help="Absolute path to system clang library. If script will not be able to locate library by itself you may provide this argument.",
     )
 
     return args.parse_args()
